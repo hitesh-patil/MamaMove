@@ -1,0 +1,27 @@
+{
+  "name": "mamamove",
+  "version": "1.0.0",
+  "main": "sw.js",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:ui": "npx playwright test --ui",
+    "test:headed": "npx playwright test --headed",
+    "test:update-snapshots": "npx playwright test --update-snapshots",
+    "codegen": "playwright codegen"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hitesh-patil/MamaMove.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hitesh-patil/MamaMove/issues"
+  },
+  "homepage": "https://github.com/hitesh-patil/MamaMove#readme",
+  "description": "",
+  "devDependencies": {
+    "@playwright/test": "^1.59.1"
+  }
+}
