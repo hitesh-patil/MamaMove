@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>MamaMove — Pregnancy Walking Companion</title>
+
+<!-- PWA manifest & theme -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#E8A4A4">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="MamaMove">
+<meta name="application-name" content="MamaMove">
+<meta name="msapplication-TileColor" content="#E8A4A4">
+<meta name="msapplication-TileImage" content="icons/icon-144x144.png">
+
+<!-- SEO / Open Graph -->
+<meta name="description" content="A gentle walking reminder and companion app for pregnant women.">
+<meta property="og:title" content="MamaMove — Pregnancy Walking Companion">
+<meta property="og:description" content="Gentle sitting reminders and walking guidance for expecting mamas.">
+<meta property="og:type" content="website">
+
+<!-- Apple touch icons -->
+<link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152x152.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192x192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512x512.png">
+
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --rose: #E8A4A4;
+    --rose-light: #F5D6D6;
+    --rose-dark: #C27A7A;
+    --peach: #F2C4A0;
+    --peach-light: #FAE8D8;
+    --sage: #A8C5A0;
+    --sage-light: #D6E8D2;
+    --cream: #FDF8F2;
+    --warm-white: #FFFAF6;
+    --text-dark: #3D2C2C;
+    --text-mid: #7A5F5F;
+    --text-light: #B89090;
+    --gold: #D4A855;
+    --gold-light: #F0DEB0;
+    --border: rgba(200, 150, 130, 0.18);
+    --shadow: 0 4px 32px rgba(180, 100, 80, 0.08);
+    --shadow-sm: 0 2px 12px rgba(180, 100, 80, 0.06);
+    --radius: 20px;
+    --radius-sm: 12px;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--text-dark);
+    min-height: 100vh;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* Background blobs */
+  body::before, body::after {
+    content: '';
+    position: fixed;
+    border-radius: 50%;
+    z-index: 0;
+    pointer-events: none;
+  }
+  body::before {
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(232,164,164,0.18) 0%, transparent 70%);
+    top: -200px; right: -150px;
+  }
+  body::after {
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(168,197,160,0.14) 0%, transparent 70%);
+    bottom: -150px; left: -100px;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 24px 16px 80px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    padding: 20px 0 28px;
+  }
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--rose) 0%, var(--peach) 100%);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .logo-icon svg { width: 18px; height: 18px; fill: white; }
+  h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--text-dark);
+    letter-spacing: -0.3px;
+  }
+  .subtitle {
+    font-size: 13px;
+    color: var(--text-light);
+    font-weight: 300;
+    letter-spacing: 0.5px;
+  }
+
+  /* Trimester Picker */
+  .trimester-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .tri-btn {
+    flex: 1;
+    padding: 10px 6px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--warm-white);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-mid);
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+    line-height: 1.3;
+  }
+  .tri-btn .tri-num {
+    display: block;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-dark);
+  }
+  .tri-btn.active {
+    background: linear-gradient(135deg, var(--rose-light), var(--peach-light));
+    border-color: var(--rose);
+    color: var(--rose-dark);
+  }
+  .tri-btn.active .tri-num { color: var(--rose-dark); }
+  .tri-btn:hover:not(.active) { border-color: var(--rose-light); background: rgba(245, 214, 214, 0.2); }
+
+  /* Main Timer Card */
+  .timer-card {
+    background: var(--warm-white);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    padding: 32px 24px;
+    text-align: center;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .timer-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--rose) 0%, var(--peach) 50%, var(--sage) 100%);
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+
+  .timer-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-light);
+    margin-bottom: 16px;
+  }
+  .timer-display {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 72px;
+    font-weight: 500;
+    color: var(--text-dark);
+    line-height: 1;
+    letter-spacing: -2px;
+    margin-bottom: 6px;
+    transition: color 0.5s;
+  }
+  .timer-display.warning { color: var(--gold); }
+  .timer-display.alert-time { color: var(--rose-dark); }
+
+  .timer-unit {
+    font-size: 12px;
+    color: var(--text-light);
+    letter-spacing: 1px;
+    margin-bottom: 24px;
+  }
+
+  /* Progress Ring */
+  .ring-wrap {
+    position: relative;
+    width: 160px;
+    height: 160px;
+    margin: 0 auto 24px;
+  }
+  .ring-wrap svg { transform: rotate(-90deg); }
+  .ring-bg { fill: none; stroke: var(--rose-light); stroke-width: 6; }
+  .ring-progress {
+    fill: none;
+    stroke: var(--rose);
+    stroke-width: 6;
+    stroke-linecap: round;
+    stroke-dasharray: 440;
+    stroke-dashoffset: 440;
+    transition: stroke-dashoffset 1s linear, stroke 0.5s;
+  }
+  .ring-progress.warning { stroke: var(--gold); }
+  .ring-progress.alert-time { stroke: var(--rose-dark); }
+  .ring-inner {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+    font-family: 'Cormorant Garamond', serif;
+  }
+  .ring-time {
+    font-size: 36px;
+    font-weight: 600;
+    color: var(--text-dark);
+    line-height: 1;
+    transition: color 0.5s;
+  }
+  .ring-time.warning { color: var(--gold); }
+  .ring-time.alert-time { color: var(--rose-dark); }
+  .ring-sub { font-size: 11px; color: var(--text-light); font-family: 'DM Sans', sans-serif; margin-top: 2px; }
+
+  /* Status message */
+  .status-msg {
+    font-size: 14px;
+    color: var(--text-mid);
+    margin-bottom: 20px;
+    min-height: 20px;
+    transition: all 0.3s;
+  }
+  .status-msg.alert-msg { color: var(--rose-dark); font-weight: 500; }
+
+  /* Buttons */
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+  .btn {
+    padding: 12px 24px;
+    border-radius: 50px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    outline: none;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--rose) 0%, var(--rose-dark) 100%);
+    color: white;
+    box-shadow: 0 4px 16px rgba(194, 122, 122, 0.3);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(194, 122, 122, 0.35); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-secondary {
+    background: var(--cream);
+    color: var(--text-mid);
+    border: 1.5px solid var(--border);
+  }
+  .btn-secondary:hover { background: var(--rose-light); border-color: var(--rose); color: var(--rose-dark); }
+  .btn-sage {
+    background: linear-gradient(135deg, var(--sage) 0%, #7FAF78 100%);
+    color: white;
+    box-shadow: 0 4px 16px rgba(127, 175, 120, 0.25);
+  }
+  .btn-sage:hover { transform: translateY(-1px); }
+
+  /* Interval Selector */
+  .interval-card {
+    background: var(--warm-white);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .interval-label {
+    font-size: 12px;
+    color: var(--text-light);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    min-width: 90px;
+  }
+  .interval-pills {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .pill {
+    padding: 5px 12px;
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1.5px solid var(--border);
+    background: var(--cream);
+    color: var(--text-mid);
+    cursor: pointer;
+    transition: all 0.18s;
+  }
+  .pill.active {
+    background: var(--rose-light);
+    border-color: var(--rose);
+    color: var(--rose-dark);
+  }
+  .pill:hover:not(.active) { border-color: var(--rose-light); }
+
+  /* Walk Session Card */
+  .walk-card {
+    background: linear-gradient(135deg, var(--sage-light) 0%, #E8F4E4 100%);
+    border-radius: var(--radius);
+    border: 1px solid rgba(140, 190, 130, 0.25);
+    padding: 24px;
+    margin-bottom: 16px;
+    display: none;
+    animation: slideUp 0.3s ease;
+  }
+  .walk-card.visible { display: block; }
+  .walk-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .walk-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: #3D5C3A;
+  }
+  .walk-timer-big {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 48px;
+    font-weight: 500;
+    color: #3D5C3A;
+    text-align: center;
+    margin: 8px 0;
+  }
+  .walk-subtitle { font-size: 12px; color: #6A9067; text-align: center; margin-bottom: 16px; }
+
+  /* Tips Card */
+  .tips-card {
+    background: var(--warm-white);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .tips-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .tips-icon {
+    width: 32px; height: 32px;
+    background: var(--peach-light);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .tips-icon svg { width: 14px; height: 14px; }
+  .tips-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-dark);
+  }
+  .tips-list { list-style: none; }
+  .tips-list li {
+    padding: 9px 0;
+    font-size: 13px;
+    color: var(--text-mid);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    line-height: 1.5;
+  }
+  .tips-list li:last-child { border-bottom: none; }
+  .tip-dot {
+    width: 6px; height: 6px;
+    background: var(--rose);
+    border-radius: 50%;
+    margin-top: 5px;
+    flex-shrink: 0;
+  }
+
+  /* Stats */
+  .stats-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .stat-card {
+    background: var(--warm-white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    text-align: center;
+  }
+  .stat-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 32px;
+    font-weight: 600;
+    color: var(--text-dark);
+    line-height: 1;
+  }
+  .stat-label { font-size: 11px; color: var(--text-light); letter-spacing: 0.5px; margin-top: 4px; }
+
+  /* Stretches */
+  .stretch-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .stretch-item {
+    background: var(--peach-light);
+    border-radius: var(--radius-sm);
+    padding: 14px 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1.5px solid transparent;
+  }
+  .stretch-item:hover { border-color: var(--peach); transform: translateY(-1px); }
+  .stretch-icon { font-size: 20px; margin-bottom: 6px; display: block; }
+  .stretch-name { font-size: 12px; font-weight: 500; color: var(--text-dark); display: block; }
+  .stretch-desc { font-size: 11px; color: var(--text-mid); margin-top: 2px; display: block; }
+
+  /* Alert overlay */
+  .alert-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(61, 44, 44, 0.55);
+    backdrop-filter: blur(3px);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .alert-overlay.show { display: flex; }
+  .alert-box {
+    background: white;
+    border-radius: var(--radius);
+    padding: 36px 28px;
+    text-align: center;
+    max-width: 340px;
+    width: 100%;
+    animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 20px 60px rgba(61, 44, 44, 0.2);
+  }
+  .alert-icon {
+    width: 72px; height: 72px;
+    background: linear-gradient(135deg, var(--rose-light), var(--peach-light));
+    border-radius: 50%;
+    margin: 0 auto 20px;
+    display: flex; align-items: center; justify-content: center;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  .alert-icon svg { width: 32px; height: 32px; }
+  .alert-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 10px;
+  }
+  .alert-msg {
+    font-size: 14px;
+    color: var(--text-mid);
+    margin-bottom: 24px;
+    line-height: 1.6;
+  }
+  .alert-btns { display: flex; gap: 10px; justify-content: center; }
+
+  /* Animations */
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(0.85); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(232, 164, 164, 0.4); }
+    50% { transform: scale(1.04); box-shadow: 0 0 0 10px rgba(232, 164, 164, 0); }
+  }
+  @keyframes breathe {
+    0%, 100% { transform: scale(1); opacity: 0.9; }
+    50% { transform: scale(1.015); opacity: 1; }
+  }
+
+  .timer-card { animation: breathe 4s ease-in-out infinite; }
+
+  /* Footer note */
+  .footer-note {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-light);
+    padding-top: 8px;
+    line-height: 1.6;
+  }
+
+  /* Section divider */
+  .section-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-mid);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin: 8px 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title::before, .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  @media (max-width: 400px) {
+    .timer-display { font-size: 56px; }
+    .ring-wrap { width: 130px; height: 130px; }
+    .ring-inner .ring-time { font-size: 28px; }
+    h1 { font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Header -->
+  <header class="header">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2C8.5 2 6 5 6 8c0 4 4 8 6 10 2-2 6-6 6-10 0-3-2.5-6-6-6zm0 7a2 2 0 110-4 2 2 0 010 4z"/></svg>
+      </div>
+      <h1>MamaMove</h1>
+    </div>
+    <p class="subtitle">Your gentle walking companion</p>
+  </header>
+
+  <!-- Trimester Selector -->
+  <div class="trimester-row">
+    <button class="tri-btn active" onclick="setTrimester(1, this)">
+      <span class="tri-num">1st</span>
+      Trimester
+    </button>
+    <button class="tri-btn" onclick="setTrimester(2, this)">
+      <span class="tri-num">2nd</span>
+      Trimester
+    </button>
+    <button class="tri-btn" onclick="setTrimester(3, this)">
+      <span class="tri-num">3rd</span>
+      Trimester
+    </button>
+  </div>
+
+  <!-- Interval Picker -->
+  <div class="interval-card">
+    <span class="interval-label">Remind every</span>
+    <div class="interval-pills">
+      <button class="pill" onclick="setInterval(20, this)">20 min</button>
+      <button class="pill active" onclick="setInterval(30, this)">30 min</button>
+      <button class="pill" onclick="setInterval(45, this)">45 min</button>
+      <button class="pill" onclick="setInterval(60, this)">60 min</button>
+    </div>
+  </div>
+
+  <!-- Main Sitting Timer Card -->
+  <div class="timer-card" id="sittingCard">
+    <p class="timer-label" id="timerLabel">Sitting time</p>
+
+    <div class="ring-wrap">
+      <svg width="160" height="160" viewBox="0 0 160 160">
+        <circle class="ring-bg" cx="80" cy="80" r="70"/>
+        <circle class="ring-progress" id="ringProgress" cx="80" cy="80" r="70"/>
+      </svg>
+      <div class="ring-inner">
+        <span class="ring-time" id="ringTime">0:00</span>
+        <span class="ring-sub" id="ringSub">minutes</span>
+      </div>
+    </div>
+
+    <p class="status-msg" id="statusMsg">Ready when you are, mama</p>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" id="mainBtn" onclick="startStop()">Start sitting</button>
+      <button class="btn btn-secondary" id="resetBtn" onclick="resetTimer()" style="display:none">Reset</button>
+    </div>
+  </div>
+
+  <!-- Walk Session Card -->
+  <div class="walk-card" id="walkCard">
+    <div class="walk-header">
+      <p class="walk-title">Walk time!</p>
+      <button class="btn btn-secondary" onclick="endWalk()" style="padding:8px 16px;font-size:13px;">Done</button>
+    </div>
+    <p class="walk-timer-big" id="walkTimer">10:00</p>
+    <p class="walk-subtitle">Take it gently, breathe deeply</p>
+    <div class="btn-row">
+      <button class="btn btn-sage" onclick="startWalkTimer(5)">5 min</button>
+      <button class="btn btn-sage" onclick="startWalkTimer(10)">10 min</button>
+      <button class="btn btn-sage" onclick="startWalkTimer(15)">15 min</button>
+    </div>
+  </div>
+
+  <!-- Daily Stats -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <p class="stat-num" id="walksCount">0</p>
+      <p class="stat-label">Walks today</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-num" id="walkMins">0</p>
+      <p class="stat-label">Minutes moved</p>
+    </div>
+  </div>
+
+  <!-- Gentle Stretches -->
+  <p class="section-title">Quick stretches</p>
+  <div class="stretch-grid">
+    <div class="stretch-item" onclick="showStretch('Ankle Circles', 'Sit tall, lift one foot and draw circles with your ankle. 10 circles each direction, both feet.')">
+      <span class="stretch-icon">🦶</span>
+      <span class="stretch-name">Ankle circles</span>
+      <span class="stretch-desc">Reduces swelling</span>
+    </div>
+    <div class="stretch-item" onclick="showStretch('Shoulder Rolls', 'Sit up straight, breathe in, roll both shoulders back and down slowly. Repeat 8 times.')">
+      <span class="stretch-icon">🌿</span>
+      <span class="stretch-name">Shoulder rolls</span>
+      <span class="stretch-desc">Eases tension</span>
+    </div>
+    <div class="stretch-item" onclick="showStretch('Pelvic Tilts', 'Sit at edge of chair, gently tilt pelvis forward and back. Strengthens your core and eases back pain. 10 reps.')">
+      <span class="stretch-icon">💛</span>
+      <span class="stretch-name">Pelvic tilts</span>
+      <span class="stretch-desc">Eases back pain</span>
+    </div>
+    <div class="stretch-item" onclick="showStretch('Neck Stretch', 'Drop your right ear to your right shoulder, hold 20 seconds. Switch sides. Keep shoulders relaxed.')">
+      <span class="stretch-icon">🌸</span>
+      <span class="stretch-name">Neck stretch</span>
+      <span class="stretch-desc">Relieves stiffness</span>
+    </div>
+  </div>
+
+  <!-- Tips Card -->
+  <div class="tips-card" style="margin-top:16px">
+    <div class="tips-header">
+      <div class="tips-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#D4A855" stroke-width="2"><path d="M12 2l3 6 7 1-5 5 1 7-6-3-6 3 1-7L2 9l7-1z"/></svg>
+      </div>
+      <p class="tips-title" id="tipsTitle">Tips for 1st Trimester</p>
+    </div>
+    <ul class="tips-list" id="tipsList">
+    </ul>
+  </div>
+
+  <!-- Notification Button -->
+  <div style="text-align:center;margin-bottom:12px;">
+    <button id="notifBtn" onclick="toggleNotif()" class="btn btn-secondary" style="font-size:12px;padding:9px 20px;">
+      Enable notifications
+    </button>
+  </div>
+
+  <p class="footer-note">Always consult your healthcare provider.<br>Listen to your body — rest when needed.</p>
+</div>
+
+<!-- Alert Overlay -->
+<div class="alert-overlay" id="alertOverlay">
+  <div class="alert-box">
+    <div class="alert-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#C27A7A" stroke-width="1.5"><path d="M12 2c-4 0-7 3-7 7 0 5 4.5 9 7 11 2.5-2 7-6 7-11 0-4-3-7-7-7zm0 4a2 2 0 110 4 2 2 0 010-4z"/></svg>
+    </div>
+    <p class="alert-title">Time to move, mama!</p>
+    <p class="alert-msg" id="alertMsg">You've been sitting for a while. A short gentle walk will help circulation and ease any discomfort.</p>
+    <div class="alert-btns">
+      <button class="btn btn-primary" onclick="startWalk()">Let's walk</button>
+      <button class="btn btn-secondary" onclick="snooze()">5 min snooze</button>
+    </div>
+  </div>
+</div>
+
+<!-- Stretch Overlay -->
+<div class="alert-overlay" id="stretchOverlay">
+  <div class="alert-box">
+    <p class="alert-title" id="stretchTitle"></p>
+    <p class="alert-msg" id="stretchMsg"></p>
+    <button class="btn btn-primary" onclick="document.getElementById('stretchOverlay').classList.remove('show')">Got it</button>
+  </div>
+</div>
+
+<script>
+  let sittingSeconds = 0;
+  let intervalMinutes = 30;
+  let sittingInterval = null;
+  let walkIntervalTimer = null;
+  let walkSeconds = 0;
+  let isRunning = false;
+  let walksToday = 0;
+  let totalWalkMins = 0;
+  let trimester = 1;
+  let snoozed = false;
+
+  const tips = {
+    1: [
+      'Short 10–15 minute walks are ideal in early pregnancy.',
+      'Stay hydrated — carry a water bottle always.',
+      'Avoid walking in extreme heat or humidity.',
+      'Morning walks can ease nausea naturally.',
+      'Wear comfortable, supportive footwear.',
+    ],
+    2: [
+      'Aim for 20–30 minute walks at a comfortable pace.',
+      'Walking reduces back pain common in mid-pregnancy.',
+      'Take breaks and rest if you feel breathless.',
+      'Gentle hills are fine — steep inclines, avoid.',
+      'Walk with someone when possible for safety.',
+    ],
+    3: [
+      'Short, frequent walks (10–15 min) are best now.',
+      'Stop immediately if you feel pelvic pressure or pain.',
+      'Walking can help baby move into position.',
+      'Always carry your phone and keep someone informed.',
+      'Choose flat, even surfaces to prevent falls.',
+    ],
+  };
+
+  function setTrimester(t, el) {
+    trimester = t;
+    document.querySelectorAll('.tri-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    renderTips();
+  }
+
+  function renderTips() {
+    const list = document.getElementById('tipsList');
+    document.getElementById('tipsTitle').textContent = `Tips for ${trimester === 1 ? '1st' : trimester === 2 ? '2nd' : '3rd'} Trimester`;
+    list.innerHTML = tips[trimester].map(t => `<li><span class="tip-dot"></span><span>${t}</span></li>`).join('');
+  }
+
+  function setInterval(mins, el) {
+    intervalMinutes = mins;
+    document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  function formatTime(s) {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${sec.toString().padStart(2, '0')}`;
+  }
+
+  function updateRing(s) {
+    const total = intervalMinutes * 60;
+    const frac = Math.min(s / total, 1);
+    const circumference = 440;
+    const offset = circumference - (frac * circumference);
+    const ring = document.getElementById('ringProgress');
+    const ringTime = document.getElementById('ringTime');
+    const ringSub = document.getElementById('ringSub');
+    ring.style.strokeDashoffset = offset;
+
+    const remainingMins = Math.ceil((total - s) / 60);
+    ringTime.textContent = remainingMins <= 0 ? '0' : remainingMins;
+    ringSub.textContent = remainingMins === 1 ? 'min left' : 'mins left';
+
+    const warn = frac >= 0.75;
+    const alert = frac >= 1;
+    ring.className = 'ring-progress' + (alert ? ' alert-time' : warn ? ' warning' : '');
+    ringTime.className = 'ring-time' + (alert ? ' alert-time' : warn ? ' warning' : '');
+  }
+
+  function tick() {
+    sittingSeconds++;
+    const mins = Math.floor(sittingSeconds / 60);
+    const secs = sittingSeconds % 60;
+    document.getElementById('ringTime') && updateRing(sittingSeconds);
+
+    const total = intervalMinutes * 60;
+    const frac = sittingSeconds / total;
+    const msg = document.getElementById('statusMsg');
+
+    if (frac < 0.5) {
+      msg.textContent = 'You\'re doing great, mama.';
+      msg.className = 'status-msg';
+    } else if (frac < 0.75) {
+      msg.textContent = 'Getting there — almost halfway to walk time.';
+      msg.className = 'status-msg';
+    } else if (frac < 1) {
+      msg.textContent = 'Almost time — start wrapping up!';
+      msg.className = 'status-msg';
+    } else if (!snoozed) {
+      msg.textContent = 'Time to take a gentle walk!';
+      msg.className = 'status-msg alert-msg';
+      if (sittingSeconds === total) showAlert();
+    }
+  }
+
+  function startStop() {
+    if (!isRunning) {
+      isRunning = true;
+      snoozed = false;
+      sittingInterval = setInterval(tick, 1000);
+      document.getElementById('mainBtn').textContent = 'Pause';
+      document.getElementById('resetBtn').style.display = 'block';
+      document.getElementById('statusMsg').textContent = 'You\'re doing great, mama.';
+    } else {
+      isRunning = false;
+      clearInterval(sittingInterval);
+      document.getElementById('mainBtn').textContent = 'Resume';
+    }
+  }
+
+  function resetTimer() {
+    isRunning = false;
+    clearInterval(sittingInterval);
+    sittingSeconds = 0;
+    snoozed = false;
+    updateRing(0);
+    document.getElementById('mainBtn').textContent = 'Start sitting';
+    document.getElementById('resetBtn').style.display = 'none';
+    document.getElementById('statusMsg').textContent = 'Ready when you are, mama';
+    document.getElementById('statusMsg').className = 'status-msg';
+  }
+
+  function showAlert() {
+    const msgs = [
+      'You\'ve been sitting a while. A short gentle stroll will boost circulation and lift your mood.',
+      'Your body will thank you for a little movement — even 5 minutes makes a difference.',
+      'Time to stretch those legs! Walking helps reduce swelling and keeps you energised.',
+    ];
+    document.getElementById('alertMsg').textContent = msgs[Math.floor(Math.random() * msgs.length)];
+    document.getElementById('alertOverlay').classList.add('show');
+    try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch(e) {}
+  }
+
+  function startWalk() {
+    document.getElementById('alertOverlay').classList.remove('show');
+    resetTimer();
+    document.getElementById('walkCard').classList.add('visible');
+    startWalkTimer(10);
+    walksToday++;
+    document.getElementById('walksCount').textContent = walksToday;
+  }
+
+  function snooze() {
+    document.getElementById('alertOverlay').classList.remove('show');
+    snoozed = true;
+    sittingSeconds = (intervalMinutes - 5) * 60;
+    document.getElementById('statusMsg').textContent = 'Snoozed for 5 minutes — see you soon!';
+    document.getElementById('statusMsg').className = 'status-msg';
+    if (!isRunning) {
+      isRunning = true;
+      sittingInterval = setInterval(tick, 1000);
+      document.getElementById('mainBtn').textContent = 'Pause';
+      document.getElementById('resetBtn').style.display = 'block';
+    }
+  }
+
+  function startWalkTimer(mins) {
+    clearInterval(walkIntervalTimer);
+    walkSeconds = mins * 60;
+    updateWalkDisplay();
+    walkIntervalTimer = setInterval(() => {
+      if (walkSeconds > 0) {
+        walkSeconds--;
+        updateWalkDisplay();
+      } else {
+        clearInterval(walkIntervalTimer);
+        document.getElementById('walkTimer').textContent = 'Done!';
+        totalWalkMins += mins;
+        document.getElementById('walkMins').textContent = totalWalkMins;
+        try { navigator.vibrate && navigator.vibrate([100, 50, 100]); } catch(e) {}
+      }
+    }, 1000);
+  }
+
+  function updateWalkDisplay() {
+    const m = Math.floor(walkSeconds / 60);
+    const s = walkSeconds % 60;
+    document.getElementById('walkTimer').textContent = `${m}:${s.toString().padStart(2, '0')}`;
+  }
+
+  function endWalk() {
+    clearInterval(walkIntervalTimer);
+    document.getElementById('walkCard').classList.remove('visible');
+    resetTimer();
+  }
+
+  function showStretch(name, desc) {
+    document.getElementById('stretchTitle').textContent = name;
+    document.getElementById('stretchMsg').textContent = desc;
+    document.getElementById('stretchOverlay').classList.add('show');
+  }
+
+  renderTips();
+  updateRing(0);
+
+  /* ── PWA: Service Worker registration ─────────────────── */
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => {
+          console.log('[MamaMove] SW registered:', reg.scope);
+
+          /* Listen for messages from SW (notification actions) */
+          navigator.serviceWorker.addEventListener('message', e => {
+            if (e.data.action === 'walk') startWalk();
+            if (e.data.action === 'snooze') snooze();
+          });
+        })
+        .catch(err => console.warn('[MamaMove] SW registration failed:', err));
+    });
+  }
+
+  /* ── PWA: Install prompt ───────────────────────────────── */
+  let deferredInstallPrompt = null;
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    const banner = document.getElementById('installBanner');
+    if (banner) {
+      banner.style.display = 'flex';
+      banner.style.animation = 'slideUp 0.4s ease';
+    }
+  });
+
+  window.addEventListener('appinstalled', () => {
+    const banner = document.getElementById('installBanner');
+    if (banner) banner.style.display = 'none';
+    deferredInstallPrompt = null;
+  });
+
+  function installApp() {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.then(choice => {
+      if (choice.outcome === 'accepted') {
+        document.getElementById('installBanner').style.display = 'none';
+      }
+      deferredInstallPrompt = null;
+    });
+  }
+
+  function dismissInstall() {
+    const banner = document.getElementById('installBanner');
+    if (banner) banner.style.display = 'none';
+  }
+
+  /* ── Push Notifications permission ────────────────────── */
+  async function requestNotifPermission() {
+    if (!('Notification' in window)) return false;
+    if (Notification.permission === 'granted') return true;
+    const result = await Notification.requestPermission();
+    return result === 'granted';
+  }
+
+  /* Schedule a local notification via SW when timer fires */
+  function scheduleNotification(delayMs, title, body) {
+    if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
+    if (Notification.permission !== 'granted') return;
+
+    setTimeout(async () => {
+      const reg = await navigator.serviceWorker.ready;
+      reg.showNotification(title, {
+        body,
+        icon: './icons/icon-192x192.png',
+        badge: './icons/icon-72x72.png',
+        vibrate: [200, 100, 200],
+        tag: 'mamamove-reminder',
+        renotify: true,
+        actions: [
+          { action: 'walk',   title: "Let's walk" },
+          { action: 'snooze', title: 'Snooze 5 min' }
+        ]
+      });
+    }, delayMs);
+  }
+
+  /* Hook notification into the alert flow */
+  const _origShowAlert = showAlert;
+  window.showAlert = function() {
+    _origShowAlert();
+    scheduleNotification(0, 'MamaMove — Time to move!', 'A short gentle walk will help circulation and ease discomfort.');
+  };
+
+  /* Notification toggle button */
+  let notifEnabled = false;
+  async function toggleNotif() {
+    const btn = document.getElementById('notifBtn');
+    if (!notifEnabled) {
+      const ok = await requestNotifPermission();
+      if (ok) {
+        notifEnabled = true;
+        btn.textContent = 'Notifications on';
+        btn.style.borderColor = 'var(--sage)';
+        btn.style.color = '#3D5C3A';
+      } else {
+        btn.textContent = 'Notifications blocked';
+      }
+    } else {
+      notifEnabled = false;
+      btn.textContent = 'Enable notifications';
+      btn.style.borderColor = '';
+      btn.style.color = '';
+    }
+  }
+</script>
+
+<!-- PWA Install Banner -->
+<div id="installBanner" style="display:none; position:fixed; bottom:0; left:0; right:0; z-index:200; background:var(--warm-white); border-top:1px solid var(--border); padding:14px 20px; align-items:center; gap:12px; box-shadow:0 -4px 20px rgba(180,100,80,0.1);">
+  <div style="width:40px;height:40px;background:linear-gradient(135deg,var(--rose),var(--peach));border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 2C8.5 2 6 5 6 8c0 4 4 8 6 10 2-2 6-6 6-10 0-3-2.5-6-6-6zm0 7a2 2 0 110-4 2 2 0 010 4z"/></svg>
+  </div>
+  <div style="flex:1;min-width:0;">
+    <p style="font-size:13px;font-weight:500;color:var(--text-dark);line-height:1.2;">Add MamaMove to home screen</p>
+    <p style="font-size:11px;color:var(--text-light);margin-top:2px;">Works offline, no app store needed</p>
+  </div>
+  <button onclick="installApp()" class="btn btn-primary" style="padding:9px 18px;font-size:13px;white-space:nowrap;">Install</button>
+  <button onclick="dismissInstall()" style="background:none;border:none;cursor:pointer;color:var(--text-light);font-size:18px;line-height:1;padding:4px;">&#215;</button>
+</div>
+
+<!-- Notification + Offline status bar -->
+<div style="position:fixed;top:0;left:0;right:0;z-index:199;pointer-events:none;" id="statusBar"></div>
+
+<script>
+  /* Offline/online indicator */
+  function updateOnlineStatus() {
+    const bar = document.getElementById('statusBar');
+    if (!navigator.onLine) {
+      bar.innerHTML = '<div style="background:#7FAF78;color:white;font-size:11px;text-align:center;padding:4px;pointer-events:none;">Offline — app works without internet</div>';
+    } else {
+      bar.innerHTML = '';
+    }
+  }
+  window.addEventListener('online', updateOnlineStatus);
+  window.addEventListener('offline', updateOnlineStatus);
+  updateOnlineStatus();
+</script>
+
+</body>
+</html>
