@@ -1,8 +1,8 @@
 /* MamaMove Service Worker — v1.0 */
 
-const CACHE_NAME = 'mamamove-v1';
+const CACHE_NAME = 'mamamove-v1.1';
 const ASSETS = [
-  './pregnancy-walk-reminder.html',
+  './index.html',
   './manifest.json',
   './icons/icon-192x192.png',
   './icons/icon-512x512.png',
@@ -34,10 +34,29 @@ self.addEventListener('activate', event => {
   );
 });
 
-/* ── Fetch: cache-first with network fallback ────────────── */
+/* ── Fetch logic ─────────────────────────────────────────── */
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
 
+  const url = new URL(event.request.url);
+
+  // Network-first for HTML pages (like index.html) to ensure updates are seen
+  if (event.request.mode === 'navigate' || url.pathname === '/' || url.pathname.endsWith('.html')) {
+    event.respondWith(
+      fetch(event.request).then(response => {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        return response;
+      }).catch(() => {
+        return caches.match(event.request).then(cached => {
+          return cached || caches.match('./index.html');
+        });
+      })
+    );
+    return;
+  }
+
+  // Cache-first for all other assets (fonts, icons, etc)
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;
@@ -49,12 +68,7 @@ self.addEventListener('fetch', event => {
         const clone = response.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         return response;
-      }).catch(() => {
-        /* Offline fallback for navigation requests */
-        if (event.request.mode === 'navigate') {
-          return caches.match('./pregnancy-walk-reminder.html');
-        }
-      });
+      }).catch(() => null);
     })
   );
 });
@@ -71,10 +85,10 @@ self.addEventListener('push', event => {
     tag: 'mamamove-reminder',
     renotify: true,
     actions: [
-      { action: 'walk',  title: "Let's walk" },
+      { action: 'walk', title: "Let's walk" },
       { action: 'snooze', title: 'Snooze 5 min' }
     ],
-    data: { url: './pregnancy-walk-reminder.html' }
+    data: { url: './index.html' }
   };
   event.waitUntil(self.registration.showNotification(title, options));
 });
@@ -86,13 +100,13 @@ self.addEventListener('notificationclick', event => {
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
-      const existingClient = clientList.find(c => c.url.includes('pregnancy-walk-reminder'));
+      const existingClient = clientList.find(c => c.url.includes('index'));
 
       if (existingClient) {
         existingClient.focus();
         existingClient.postMessage({ action: action || 'open' });
       } else {
-        clients.openWindow('./pregnancy-walk-reminder.html');
+        clients.openWindow('./index.html');
       }
     })
   );
