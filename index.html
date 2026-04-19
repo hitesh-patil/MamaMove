@@ -1142,15 +1142,18 @@
 
   <script>
     let sittingSeconds = 0;
+    let baseSittingSeconds = 0;
+    let sittingStartTime = 0;
     let intervalMinutes = 30;
     let sittingInterval = null;
     let walkIntervalTimer = null;
     let walkSeconds = 0;
+    let walkEndTime = 0;
     let isRunning = false;
     let walksToday = 0;
     let totalWalkMins = 0;
     let trimester = 1;
-    let snoozed = false;
+    let alertShown = false;
 
     const tips = {
       1: [
@@ -1222,7 +1225,7 @@
     }
 
     function tick() {
-      sittingSeconds++;
+      sittingSeconds = baseSittingSeconds + Math.floor((Date.now() - sittingStartTime) / 1000);
       const mins = Math.floor(sittingSeconds / 60);
       const secs = sittingSeconds % 60;
       document.getElementById('ringTime') && updateRing(sittingSeconds);
@@ -1234,23 +1237,29 @@
       if (frac < 0.5) {
         msg.textContent = 'You\'re doing great, mama.';
         msg.className = 'status-msg';
+        alertShown = false;
       } else if (frac < 0.75) {
         msg.textContent = 'Getting there — almost halfway to walk time.';
         msg.className = 'status-msg';
+        alertShown = false;
       } else if (frac < 1) {
         msg.textContent = 'Almost time — start wrapping up!';
         msg.className = 'status-msg';
-      } else if (!snoozed) {
+        alertShown = false;
+      } else {
         msg.textContent = 'Time to take a gentle walk!';
         msg.className = 'status-msg alert-msg';
-        if (sittingSeconds === total) showAlert();
+        if (!alertShown) {
+          showAlert();
+          alertShown = true;
+        }
       }
     }
 
     function startStop() {
       if (!isRunning) {
         isRunning = true;
-        snoozed = false;
+        sittingStartTime = Date.now();
         sittingInterval = setInterval(tick, 1000);
         document.getElementById('mainBtn').textContent = 'Pause';
         document.getElementById('resetBtn').style.display = 'block';
@@ -1258,6 +1267,7 @@
       } else {
         isRunning = false;
         clearInterval(sittingInterval);
+        baseSittingSeconds += Math.floor((Date.now() - sittingStartTime) / 1000);
         document.getElementById('mainBtn').textContent = 'Resume';
       }
     }
@@ -1266,7 +1276,9 @@
       isRunning = false;
       clearInterval(sittingInterval);
       sittingSeconds = 0;
-      snoozed = false;
+      baseSittingSeconds = 0;
+      sittingStartTime = 0;
+      alertShown = false;
       updateRing(0);
       document.getElementById('mainBtn').textContent = 'Start sitting';
       document.getElementById('resetBtn').style.display = 'none';
@@ -1296,12 +1308,15 @@
 
     function snooze() {
       document.getElementById('alertOverlay').classList.remove('show');
-      snoozed = true;
-      sittingSeconds = (intervalMinutes - 5) * 60;
+      baseSittingSeconds = (intervalMinutes - 5) * 60;
+      sittingSeconds = baseSittingSeconds;
+      sittingStartTime = Date.now();
+      alertShown = false;
       document.getElementById('statusMsg').textContent = 'Snoozed for 5 minutes — see you soon!';
       document.getElementById('statusMsg').className = 'status-msg';
       if (!isRunning) {
         isRunning = true;
+        sittingStartTime = Date.now();
         sittingInterval = setInterval(tick, 1000);
         document.getElementById('mainBtn').textContent = 'Pause';
         document.getElementById('resetBtn').style.display = 'block';
@@ -1311,12 +1326,12 @@
     function startWalkTimer(mins) {
       clearInterval(walkIntervalTimer);
       walkSeconds = mins * 60;
+      walkEndTime = Date.now() + (walkSeconds * 1000);
       updateWalkDisplay();
       walkIntervalTimer = setInterval(() => {
-        if (walkSeconds > 0) {
-          walkSeconds--;
-          updateWalkDisplay();
-        } else {
+        walkSeconds = Math.max(0, Math.ceil((walkEndTime - Date.now()) / 1000));
+        updateWalkDisplay();
+        if (walkSeconds <= 0) {
           clearInterval(walkIntervalTimer);
           document.getElementById('walkTimer').textContent = 'Done!';
           totalWalkMins += mins;
